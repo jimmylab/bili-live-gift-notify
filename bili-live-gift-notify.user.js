@@ -15,10 +15,10 @@
 
 'use strict';
 
-// 可自定义背景颜色，如#caafc9
+// 可自定义背景颜色，如#caafc9, rgb(22 22 22)
 const BACKGROUND_COLOR = '#FFFFFF'
 
-// 只提示高价的礼物(小电视、摩天大楼、天空之翼、礼花……待更新)
+// 只提示高价的礼物(小电视、摩天大楼、天空之翼、礼花……更多待更新)
 const EXPENSIVE_GIFT_ONLY = true;
 
 const PATTERN_GIFT_TOTAL_COUNT = /总(\d+)个/;
@@ -51,12 +51,12 @@ function createCapturePanel() {
 	let backgroundColor = BACKGROUND_COLOR || 'rgba(255, 255, 255, 0.875)'
 	injectCSS(
 		`#gift-capture-mask {
+			background: ${backgroundColor};
 			position: fixed;
 			top: 0;
 			left: 0;
 			width: 50vw;
 			height: 75vh;
-			background: ${backgroundColor};
 			z-index: 10000;
 			padding: 0;
 			margin: 0;
@@ -71,7 +71,6 @@ function createCapturePanel() {
 			align-content: flex-start;
 		}`,
 		`#gift-capture > .chat-item, #capture > canvas {
-			width: 300px !important;
 			display: flex;
 			align-items: center;
 		}`,
@@ -191,6 +190,10 @@ function startObserve() {
 					} else if (giftFrame.matches('.gift-30064-40')) {
 						targetNode.dispatchEvent(
 							new CustomEvent( 'newGift', { detail: { type: '礼花', giftName: '礼花', username, count, isCombo, isTotal, node }, bubbles: false } )
+						);
+					} else if (giftFrame.matches('.gift-30669-40')) {
+						targetNode.dispatchEvent(
+							new CustomEvent( 'newGift', { detail: { type: '爱的魔力', giftName: '爱的魔力', username, count, isCombo, isTotal, node }, bubbles: false } )
 						);
 					} else {
 						// 其他礼物，测试
