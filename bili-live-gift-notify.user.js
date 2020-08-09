@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         b站直播礼物通知
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  b站直播礼物通知
 // @author       JimmyLiu
 // @include      /^https?://live\.bilibili\.com/\d+/
@@ -69,16 +69,28 @@ function createCapturePanel() {
 			flex-direction: column;
 			flex-wrap: wrap;
 			align-content: flex-start;
+			font-size: 12px;
 		}`,
 		`#gift-capture > .chat-item, #capture > canvas {
 			display: flex;
 			align-items: center;
+			margin: 2px 10px 3px 0 !important;
+		}`,
+		`#gift-capture > .chat-item.gift-item {
+			padding: 0;
 		}`,
 		`#gift-capture .gift-frame {
 			animation: none;
+			width: 30px !important;
+			height: 30px !important;
 		}`,
 		`#gift-capture > .chat-item.system-msg.border-box {
-			margin: 0 !important;
+			min-height: 54px !important;
+			max-width: 290px;
+		}`,
+		`#gift-capture .msg-icon.bg-cover.dp-relative {
+			width: 54px;
+			height: 54px;
 		}`,
 	)
 
@@ -137,7 +149,6 @@ function createCapturePanel() {
 
 		panel.style.cursor = 'default';
 	})
-	window.panel = capturePanel;
 }
 
 function startObserve() {
