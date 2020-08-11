@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         b站直播礼物通知
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.5
 // @description  b站直播礼物通知
 // @author       JimmyLiu
 // @include      /^https?://live\.bilibili\.com/\d+/
@@ -21,9 +21,7 @@ const BACKGROUND_COLOR = '#FFFFFF'
 // 此值为true时只提示高价的礼物(小电视、摩天大楼、天空之翼、礼花……更多待更新)
 const EXPENSIVE_GIFT_ONLY = true;
 
-const PATTERN_GIFT_TOTAL_COUNT = /总(\d+)个/;
-const PATTERN_GIFT_COUNT = /(\d+)连击|x(\d+)/;
-
+// 贵重礼物在此定义
 const GIFT_CLASS_MAP = {
 	'.gift-25-40': '小电视',
 	'.gift-20003-40': '摩天大楼',
@@ -33,6 +31,8 @@ const GIFT_CLASS_MAP = {
 };
 const GIFT_CLASSNAME = Object.keys(GIFT_CLASS_MAP);
 
+const PATTERN_GIFT_TOTAL_COUNT = /总(\d+)个/;
+const PATTERN_GIFT_COUNT = /(\d+)连击|x(\d+)/;
 
 let capturePanel;
 
@@ -59,6 +59,7 @@ const injectCSS = (() => {
 
 function createCapturePanel() {
 	let backgroundColor = BACKGROUND_COLOR || 'rgba(255, 255, 255, 0.875)'
+	const STICKY_BORDER = 6;
 	injectCSS(
 		`#gift-capture-mask {
 			background: ${backgroundColor};
@@ -87,6 +88,7 @@ function createCapturePanel() {
 			margin: 2px 10px 3px 0 !important;
 		}`,
 		`#gift-capture > .chat-item.gift-item {
+			box-sizing: border-box;
 			padding: 0;
 		}`,
 		`#gift-capture .gift-frame {
@@ -104,11 +106,10 @@ function createCapturePanel() {
 		}`,
 	)
 
-	let panel = document.createElement('div');
+	const panel = document.createElement('div');
 	panel.id = 'gift-capture-mask';
 	panel.className = 'gift-capture-mask chat-history-panel';
-	let parent = document.body;
-	parent.appendChild(panel);
+	document.body.appendChild(panel);
 
 	capturePanel = document.createElement('div');
 	capturePanel.id = 'gift-capture';
@@ -117,48 +118,89 @@ function createCapturePanel() {
 
 	let isDown = false;
 	let diffX, diffY;
-	panel.addEventListener('dblclick', ev => {
-		if (panel.style.width === '100vw') {
-			panel.style.width = '50vw';
-			panel.style.height = '75vh';
+	panel.addEventListener('dblclick', function(ev) {
+		if (this.style.width === '100vw') {
+			this.style.width = '50vw';
+			this.style.height = '75vh';
 		} else {
-			panel.style.width = '100vw';
-			panel.style.height = '100vh';
+			this.style.width = '100vw';
+			this.style.height = '100vh';
 		}
 	});
-	panel.addEventListener('mousedown', ev => {
-		diffX = ev.clientX - panel.offsetLeft;
-		diffY = ev.clientY - panel.offsetTop;
-		panel.style.cursor = 'move';
+
+	const docElem = document.documentElement;
+
+	Object.defineProperties(panel, {
+		'offsetRight': {
+			get() {
+				return docElem.clientWidth - this.offsetLeft - this.offsetWidth;
+			}
+		},
+		'offsetBottom': {
+			get() {
+				return docElem.clientHeight - this.offsetTop - this.offsetHeight;
+			}
+		},
+		'dockRight': {
+			get() {
+				return docElem.clientWidth - this.offsetWidth;
+			}
+		},
+		'dockBottom': {
+			get() {
+				return docElem.clientHeight - this.offsetHeight;
+			}
+		},
+	});
+
+	panel.addEventListener('mousedown', function(ev) {
+		diffX = ev.clientX - this.offsetLeft;
+		diffY = ev.clientY - this.offsetTop;
+		this.style.cursor = 'move';
 		isDown = true;
+
+		panel.addEventListener('mouseleave', mouseleave);    // 注意mousemove和mouseleave的区别
+		window.addEventListener('mousemove', mousemove);    // 注意是window
 	});
-	window.addEventListener('mousemove', ev => {
-		if (isDown === false) {
-			return;
-		}
-		var X = ev.clientX - diffX;
-		var Y = ev.clientY - diffY;
+
+	function mousemove(ev) {
+		if (isDown === false) return;
+		let X = ev.clientX - diffX;
+		let Y = ev.clientY - diffY;
 		panel.style.left = X + 'px';
 		panel.style.top = Y + 'px';
-	});
-	panel.addEventListener('mouseup', ev => {
+	}
+
+	function mouseup(ev) {
+		ev.preventDefault();
 		isDown = false;
-		let offsetRight  = parent.clientWidth - panel.offsetLeft - panel.offsetWidth,
-			offsetBottom = window.innerHeight - panel.offsetTop - panel.offsetHeight;
+		let {offsetLeft: X, offsetTop: Y, offsetRight, offsetBottom} = this;
 
-		if (panel.offsetLeft <= 5) {
-			panel.style.left = 0;
-		} else if (offsetRight < 5) {
-			panel.style.left = `${parent.clientWidth - panel.offsetWidth}px`;
+		if (X < STICKY_BORDER) {
+			this.style.left = '0px';
+		} else if (offsetRight < STICKY_BORDER) {
+			this.style.left = `${this.dockRight}px`;
 		}
-		if (panel.offsetTop <= 5) {
-			panel.style.top = 0;
-		} else if (offsetBottom < 5) {
-			panel.style.top = `${window.innerHeight - panel.offsetHeight}px`;
+		if (Y < STICKY_BORDER) {
+			this.style.top = '0px';
+		} else if (offsetBottom < STICKY_BORDER) {
+			this.style.top = `${this.dockBottom}px`;
 		}
 
-		panel.style.cursor = 'default';
-	})
+		// Remove handlers
+		panel.removeEventListener('mouseleave', mouseleave);
+		window.removeEventListener('mousemove', mousemove);
+
+		// Restore cursor
+		panel.style.cursor = 'default';    
+	}
+
+	function mouseleave(ev) {
+		console.log(mouseleave)
+		mouseup.call(panel, ev)
+	}
+
+	panel.addEventListener('mouseup', mouseup, {});
 }
 
 function startObserve() {
