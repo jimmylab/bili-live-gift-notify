@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         b站直播礼物通知
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  b站直播礼物通知
 // @author       JimmyLiu
 // @include      /^https?://live\.bilibili\.com/\d+/

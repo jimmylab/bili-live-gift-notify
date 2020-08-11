@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         b站直播礼物通知
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  b站直播礼物通知
 // @author       JimmyLiu
 // @include      /^https?://live\.bilibili\.com/\d+/
@@ -18,11 +18,21 @@
 // 可自定义背景颜色，如#caafc9, rgb(22 22 22)
 const BACKGROUND_COLOR = '#FFFFFF'
 
-// 只提示高价的礼物(小电视、摩天大楼、天空之翼、礼花……更多待更新)
+// 此值为true时只提示高价的礼物(小电视、摩天大楼、天空之翼、礼花……更多待更新)
 const EXPENSIVE_GIFT_ONLY = true;
 
 const PATTERN_GIFT_TOTAL_COUNT = /总(\d+)个/;
 const PATTERN_GIFT_COUNT = /(\d+)连击|x(\d+)/;
+
+const GIFT_CLASS_MAP = {
+	'.gift-25-40': '小电视',
+	'.gift-20003-40': '摩天大楼',
+	'.gift-30087-40': '天空之翼',
+	'.gift-30064-40': '礼花',
+	'.gift-30669-40': '爱的魔力',
+};
+const GIFT_CLASSNAME = Object.keys(GIFT_CLASS_MAP);
+
 
 let capturePanel;
 
@@ -186,25 +196,11 @@ function startObserve() {
 					username = username ? username.textContent.trim() : '<未知用户>';
 					// 礼物通知
 					let giftFrame = node.querySelector('.gift-frame');
-					if (giftFrame.matches('.gift-25-40')) {
+					let giftClass = GIFT_CLASSNAME.find( className => giftFrame.matches(className) );
+					if (giftClass) {
+						let giftName = GIFT_CLASS_MAP[giftClass];
 						targetNode.dispatchEvent(
-							new CustomEvent( 'newGift', { detail: { type: '小电视', giftName: '小电视', username, count, isCombo, isTotal, node }, bubbles: false } )
-						);
-					} else if (giftFrame.matches('.gift-20003-40')) {
-						targetNode.dispatchEvent(
-							new CustomEvent( 'newGift', { detail: { type: '摩天大楼', giftName: '摩天大楼', username, count, isCombo, isTotal, node }, bubbles: false } )
-						);
-					} else if (giftFrame.matches('.gift-30087-40')) {
-						targetNode.dispatchEvent(
-							new CustomEvent( 'newGift', { detail: { type: '天空之翼', giftName: '天空之翼', username, count, isCombo, isTotal, node }, bubbles: false } )
-						);
-					} else if (giftFrame.matches('.gift-30064-40')) {
-						targetNode.dispatchEvent(
-							new CustomEvent( 'newGift', { detail: { type: '礼花', giftName: '礼花', username, count, isCombo, isTotal, node }, bubbles: false } )
-						);
-					} else if (giftFrame.matches('.gift-30669-40')) {
-						targetNode.dispatchEvent(
-							new CustomEvent( 'newGift', { detail: { type: '爱的魔力', giftName: '爱的魔力', username, count, isCombo, isTotal, node }, bubbles: false } )
+							new CustomEvent( 'newGift', { detail: { type: '礼物', giftName, username, count, isCombo, isTotal, node }, bubbles: false } )
 						);
 					} else {
 						// 其他礼物，测试
@@ -215,11 +211,16 @@ function startObserve() {
 						);
 					}
 				} else if (node.matches('.chat-item.system-msg.border-box')) {
-					let captionElems = node.querySelectorAll('span.v-middle')
-					let isShipMsg = Array.from(captionElems).find(elem => elem.textContent.match(/舰长|提督|总督/));
+					let captionElems = Array.from(node.querySelectorAll('span.v-middle'))
+					let isShipMsg = captionElems.find(elem => elem.textContent.match(/舰长|提督|总督/));
 					let username = captionElems[0];
 					username = username ? username.textContent.trim() : '<未知用户>';
 					if (isShipMsg) {
+						if ( !captionElems.find(elem => elem.textContent.match(/开通了主播的|续费了主播的/)) ) {
+							console.log('非本直播间大航海')
+							console.log(node)
+							return;
+						}
 						let giftName = isShipMsg.textContent.trim();
 						// 上船消息
 						targetNode.dispatchEvent(
@@ -264,6 +265,5 @@ function startObserve() {
 }
 
 (async function() {
-	// await loadScript('http://html2canvas.hertzen.com/dist/html2canvas.min.js')
 	setTimeout(startObserve, 5000);
 }) ();
