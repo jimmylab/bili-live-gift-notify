@@ -192,12 +192,11 @@ function createCapturePanel() {
 		window.removeEventListener('mousemove', mousemove);
 
 		// Restore cursor
-		panel.style.cursor = 'default';    
+		panel.style.cursor = 'default';
 	}
 
 	function mouseleave(ev) {
-		console.log(mouseleave)
-		mouseup.call(panel, ev)
+		mouseup.call(panel, ev);
 	}
 
 	panel.addEventListener('mouseup', mouseup, {});
