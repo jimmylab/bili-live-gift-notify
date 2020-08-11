@@ -109,7 +109,8 @@ function createCapturePanel() {
 	const panel = document.createElement('div');
 	panel.id = 'gift-capture-mask';
 	panel.className = 'gift-capture-mask chat-history-panel';
-	document.body.appendChild(panel);
+	const body = document.body;
+	body.appendChild(panel);
 
 	capturePanel = document.createElement('div');
 	capturePanel.id = 'gift-capture';
@@ -159,7 +160,7 @@ function createCapturePanel() {
 		this.style.cursor = 'move';
 		isDown = true;
 
-		panel.addEventListener('mouseleave', mouseleave);    // 注意mousemove和mouseleave的区别
+		body.addEventListener('mouseleave', mouseleave);    // 注意mousemove和mouseleave的区别
 		window.addEventListener('mousemove', mousemove);    // 注意是window
 	});
 
@@ -188,7 +189,7 @@ function createCapturePanel() {
 		}
 
 		// Remove handlers
-		panel.removeEventListener('mouseleave', mouseleave);
+		body.removeEventListener('mouseleave', mouseleave);
 		window.removeEventListener('mousemove', mousemove);
 
 		// Restore cursor
